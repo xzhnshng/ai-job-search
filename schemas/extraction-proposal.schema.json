@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "extraction-proposal-v1",
+  "title": "Career evidence extraction proposal",
+  "type": "object",
+  "required": ["contract_version", "source_id", "experiences", "projects", "skills", "education"],
+  "properties": {
+    "contract_version": {"const": "1"},
+    "source_id": {"type": "string", "pattern": "^source_[0-9a-f]{32}$"},
+    "experiences": {"type": "array", "items": {"type": "object"}},
+    "projects": {"type": "array", "items": {"type": "object"}},
+    "skills": {"type": "array", "items": {"type": "string"}},
+    "education": {"type": "array", "items": {"type": "object"}},
+    "uncertainties": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

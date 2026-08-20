@@ -1,6 +1,8 @@
 # Setup Guide
 
-Step-by-step instructions for getting the AI Job Search framework running.
+Step-by-step instructions for getting the inherited AI Job Search framework
+running. The Codex-first AI-Driven Job Search setup will replace these
+Claude-oriented instructions as implementation progresses.
 
 ## 1. Prerequisites
 

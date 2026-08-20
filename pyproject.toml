@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-driven-job-search"
+version = "0.1.0"
+description = "Local-first, Codex-powered career intelligence and job application system"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "openpyxl>=3.1,<4",
+  "pypdf>=6,<7",
+  "pydantic>=2.8,<3",
+]
+
+[project.scripts]
+ai-job-search = "ai_job_search.cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

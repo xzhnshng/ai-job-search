@@ -1,0 +1,15 @@
+[runtime]
+private_dir = ".ai-job-search"
+timezone = "America/Los_Angeles"
+
+[database]
+busy_timeout_ms = 5000
+
+[retention]
+raw_observations_days = 30
+logs_days = 14
+reports_days = 30
+exports_days = 30
+backup_count = 5
+cache_max_mb = 250
+warn_free_disk_mb = 1024

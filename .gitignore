@@ -20,6 +20,7 @@ venv/
 
 # Personal data (never commit these)
 salary_data.json
+.ai-job-search/
 # Match at any depth: the job-scraper skill resolves `job_scraper/` relative to
 # its own directory, so these land at .claude/skills/job-scraper/job_scraper/*.
 # A rooted `job_scraper/...` pattern silently fails to match them.
@@ -59,6 +60,9 @@ cover_letters/Cover_*.tex
 
 # documents/ subfolder contents are personal — only README and folder structure are tracked
 documents/cv/**
+documents/projects/**
+documents/publications/**
+documents/plans/**
 documents/linkedin/**
 documents/diplomas/**
 documents/references/**

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "company-plan-proposal-v1",
+  "title": "Target company plan proposal",
+  "type": "object",
+  "required": ["contract_version", "market", "source_id", "companies"],
+  "properties": {
+    "contract_version": {"const": "1"},
+    "market": {"type": "string", "enum": ["technology", "trading"]},
+    "source_id": {"type": "string", "pattern": "^source_[0-9a-f]{32}$"},
+    "companies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rank", "company", "target_roles"],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1},
+          "company": {"type": "string", "minLength": 1},
+          "target_roles": {"type": "string"},
+          "ml_opportunity": {"type": ["number", "null"]},
+          "income_potential": {"type": ["number", "null"]},
+          "fit": {"type": ["number", "null"]},
+          "recommendation": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

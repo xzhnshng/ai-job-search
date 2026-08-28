@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from ai_job_search.domain.evidence.ingestion import (
+    approve_evidence_proposal,
     create_evidence_proposal,
     get_evidence_proposal,
     list_sources,
@@ -80,6 +81,112 @@ class EvidenceIngestionTests(unittest.TestCase):
         stored = get_evidence_proposal(self.connection, proposal["id"])
         self.assertEqual(source["sha256"], stored["expected_versions"]["source_sha256"])
         self.assertEqual(["Python"], stored["payload"]["skills"])
+
+    def _project_payload(self, source_id: str) -> dict[str, object]:
+        return {
+            "contract_version": "1",
+            "source_id": source_id,
+            "experiences": [],
+            "projects": [
+                {
+                    "name": "Synthetic Inference Platform",
+                    "project_key": "synthetic_inference",
+                    "evidence_status": "candidate_attested",
+                    "resume_metric_policy": "use_all_truthful_helpful_numbers",
+                    "ownership": ["Built the streaming runtime"],
+                    "collaboration_boundaries": ["A teammate built the UI"],
+                    "metrics": [
+                        {
+                            "name": "average_total_time",
+                            "before": 230,
+                            "after": 125,
+                            "unit": "milliseconds",
+                            "warning": "Do not label as TTFT",
+                        }
+                    ],
+                    "role_tags": ["senior_backend_sde"],
+                }
+            ],
+            "skills": ["Java", "AWS CDK"],
+            "education": [],
+            "uncertainties": ["Synthetic fixture"],
+        }
+
+    def test_approval_atomically_normalizes_reviewed_project_evidence(self) -> None:
+        source = register_source(
+            self.connection, self.paths, self.document, source_type="candidate_attestation"
+        )
+        proposal = create_evidence_proposal(
+            self.connection, self._project_payload(source["id"])
+        )
+
+        result = approve_evidence_proposal(
+            self.connection,
+            proposal["id"],
+            actor="candidate",
+            reason="Reviewed synthetic proposal",
+        )
+
+        self.assertEqual("approved", result["state"])
+        self.assertEqual(
+            {
+                "projects": 1,
+                "components": 3,
+                "claims": 3,
+                "metrics": 1,
+                "skills": 2,
+                "evidence_links": 3,
+            },
+            result["created"],
+        )
+        self.assertEqual(1, self.connection.execute("SELECT count(*) FROM project").fetchone()[0])
+        self.assertEqual(
+            3, self.connection.execute("SELECT count(*) FROM project_component").fetchone()[0]
+        )
+        self.assertEqual(3, self.connection.execute("SELECT count(*) FROM claim").fetchone()[0])
+        self.assertEqual(1, self.connection.execute("SELECT count(*) FROM metric").fetchone()[0])
+        self.assertEqual(2, self.connection.execute("SELECT count(*) FROM skill").fetchone()[0])
+        self.assertEqual(
+            3, self.connection.execute("SELECT count(*) FROM claim_evidence").fetchone()[0]
+        )
+        self.assertEqual(
+            "230 -> 125",
+            self.connection.execute("SELECT value_text FROM metric").fetchone()[0],
+        )
+        approval = self.connection.execute(
+            "SELECT decision, actor, reason FROM approval_event WHERE proposal_id = ?",
+            (proposal["id"],),
+        ).fetchone()
+        self.assertEqual(
+            ("approved", "candidate", "Reviewed synthetic proposal"), tuple(approval)
+        )
+
+        with self.assertRaisesRegex(ValueError, "already approved"):
+            approve_evidence_proposal(self.connection, proposal["id"])
+        self.assertEqual(1, self.connection.execute("SELECT count(*) FROM project").fetchone()[0])
+
+    def test_approval_rejects_stale_source_without_partial_writes(self) -> None:
+        source = register_source(
+            self.connection, self.paths, self.document, source_type="candidate_attestation"
+        )
+        proposal = create_evidence_proposal(
+            self.connection, self._project_payload(source["id"])
+        )
+        self.document.write_text("# Changed attestation\n")
+        register_source(
+            self.connection, self.paths, self.document, source_type="candidate_attestation"
+        )
+
+        with self.assertRaisesRegex(ValueError, "source changed"):
+            approve_evidence_proposal(self.connection, proposal["id"])
+
+        self.assertEqual(0, self.connection.execute("SELECT count(*) FROM project").fetchone()[0])
+        self.assertEqual(
+            "pending",
+            self.connection.execute(
+                "SELECT state FROM proposal WHERE id = ?", (proposal["id"],)
+            ).fetchone()[0],
+        )
 
 
 if __name__ == "__main__":

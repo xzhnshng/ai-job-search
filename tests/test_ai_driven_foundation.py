@@ -100,6 +100,20 @@ class MigrationTests(WorkspaceTestCase):
         finally:
             connection.close()
 
+    def test_known_eof_only_legacy_migration_hash_is_accepted(self) -> None:
+        connection = self.initialize_database()
+        try:
+            connection.execute(
+                "UPDATE schema_migration SET sha256 = ? WHERE name = ?",
+                (
+                    "ea32aa6482ff54e7f4e1b0e84fae2a18ef177ae3b1f1d985183419987380275f",
+                    "0001_foundation.sql",
+                ),
+            )
+            self.assertEqual([], apply_migrations(connection, self.workspace))
+        finally:
+            connection.close()
+
 
 class GovernanceAndArtifactTests(WorkspaceTestCase):
     def test_proposal_has_single_decision(self) -> None:

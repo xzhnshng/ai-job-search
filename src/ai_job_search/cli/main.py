@@ -24,6 +24,7 @@ from ai_job_search.domain.companies.planning import (
 )
 from ai_job_search.domain.evidence.inventory import inventory_sources
 from ai_job_search.domain.evidence.ingestion import (
+    approve_evidence_proposal,
     create_evidence_proposal,
     get_evidence_proposal,
     list_sources,
@@ -103,6 +104,10 @@ def parser() -> argparse.ArgumentParser:
     evidence_propose.add_argument("--input", type=Path, required=True)
     evidence_show = evidence_sub.add_parser("proposal-show")
     evidence_show.add_argument("proposal_id")
+    evidence_approve = evidence_sub.add_parser("approve")
+    evidence_approve.add_argument("proposal_id")
+    evidence_approve.add_argument("--actor", default="user")
+    evidence_approve.add_argument("--reason")
 
     companies = sub.add_parser("companies")
     company_sub = companies.add_subparsers(dest="action", required=True)
@@ -302,6 +307,20 @@ def dispatch(args: argparse.Namespace) -> Envelope:
                 return Envelope(
                     "evidence.proposal-show",
                     {"proposal": get_evidence_proposal(connection, args.proposal_id)},
+                )
+            if args.action == "approve":
+                result = approve_evidence_proposal(
+                    connection,
+                    args.proposal_id,
+                    actor=args.actor,
+                    reason=args.reason,
+                )
+                return Envelope(
+                    "evidence.approve",
+                    {"proposal": result},
+                    next_actions=(
+                        "Use approved project components and metrics when tailoring applications",
+                    ),
                 )
         finally:
             connection.close()

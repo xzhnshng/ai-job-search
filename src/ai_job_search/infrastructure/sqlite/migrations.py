@@ -14,6 +14,26 @@ class MigrationError(RuntimeError):
     pass
 
 
+# These hashes were applied locally before an EOF-only formatting cleanup removed
+# one trailing blank line from each migration. The SQL statements are identical.
+# Compatibility is deliberately pinned old-hash -> canonical-hash per migration;
+# every other applied-file change remains a hard error.
+LEGACY_EQUIVALENT_HASHES = {
+    "0001_foundation.sql": {
+        "ea32aa6482ff54e7f4e1b0e84fae2a18ef177ae3b1f1d985183419987380275f":
+            "7368602ecd1843eb652720ad10c0938a26a849d957a22a5df2f28a4b151f64e5",
+    },
+    "0002_applications.sql": {
+        "687816f83915bae6befc31040efb5774c3ac894ae5219382e56b3737470aaa75":
+            "7314592bd387e1e4c04933c53fb1c3f40238ddec876b1163c2b25af4842e2a85",
+    },
+    "0003_evidence.sql": {
+        "235462b86eba9d10158cf2fc8fff61dbbce77a9675b339541e97697b636fc4d8":
+            "442aa97cdf873ce7364e8ee55549957855bdafaf222985391aa9fd96674d5486",
+    },
+}
+
+
 @dataclass(frozen=True)
 class Migration:
     name: str
@@ -83,7 +103,11 @@ def apply_migrations(connection: sqlite3.Connection, workspace: Path) -> list[st
         previous_hash = applied.get(migration.name)
         if previous_hash:
             if previous_hash != migration.sha256:
-                raise MigrationError(f"Applied migration changed: {migration.name}")
+                compatible_hash = LEGACY_EQUIVALENT_HASHES.get(migration.name, {}).get(
+                    previous_hash
+                )
+                if compatible_hash != migration.sha256:
+                    raise MigrationError(f"Applied migration changed: {migration.name}")
             continue
         try:
             connection.execute("BEGIN IMMEDIATE")

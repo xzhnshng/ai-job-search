@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
-import re
 import sqlite3
 from datetime import date
 from typing import Any
 
 from ai_job_search.domain.common.ids import new_id
+from ai_job_search.domain.common.text import normalize_company_name
 from ai_job_search.domain.common.time import utc_now_text
 from ai_job_search.infrastructure.sqlite.unit_of_work import transaction
 
@@ -26,10 +26,6 @@ STAGES = {
 RESULTS = {None, "rejected", "withdrawn", "no_response", "offer", "hired"}
 
 
-def _normalize_company(name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", name.casefold()).strip()
-
-
 def create_application(
     connection: sqlite3.Connection,
     *,
@@ -43,7 +39,7 @@ def create_application(
     if applied_date:
         date.fromisoformat(applied_date)
     now = utc_now_text()
-    normalized = _normalize_company(company_name)
+    normalized = normalize_company_name(company_name)
     if not normalized or not title.strip():
         raise ValueError("Company and title are required")
     with transaction(connection):

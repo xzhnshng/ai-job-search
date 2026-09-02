@@ -1,8 +1,8 @@
 # AI-Driven Job Search: User Experience Journey
 
-**Status:** Draft experience specification
-**Version:** 0.4
-**Date:** 2026-07-26
+**Status:** Draft experience specification aligned to lean personal MVP
+**Version:** 0.5
+**Date:** 2026-08-28
 **Related specification:** [Product Specification](product-spec.md)
 **Technical design:** [System Design](system-design.md)
 **Architecture guide:** [Project Architecture and Data Guide](project-architecture-guide.md)
@@ -25,6 +25,15 @@ Claude-oriented commands exist in the inherited repository as useful workflow
 references; the new product does not require Claude Code or an Anthropic
 subscription.
 
+### 1.1 Lean-MVP reading rule
+
+The controlling MVP journey is setup, evidence, target-company monitoring,
+daily review, selected-job resume preparation, and application tracking. Later
+sections describing Gmail synchronization, dedicated interview/upskill
+systems, supplemental portal orchestration, dashboards, or automatic strategy
+calibration are retained as deferred reference designs and are not MVP
+commitments. Codex may still help with those activities interactively.
+
 ## 2. Experience summary
 
 The complete experience has seven stages:
@@ -35,8 +44,8 @@ flowchart LR
     B --> C["3. Configure<br/>career tracks"]
     C --> D["4. Register<br/>target companies"]
     D --> E["5. Review<br/>new jobs daily"]
-    E --> F["6. Plan and create<br/>an application"]
-    F --> G["7. Track outcomes<br/>and improve"]
+    E --> F["6. Plan and create<br/>a selected application"]
+    F --> G["7. Track<br/>the outcome"]
     G --> E
 ```
 
@@ -47,10 +56,16 @@ Open daily report
 → review a small number of new jobs
 → choose Apply, Investigate, Save, or Skip
 → approve a resume evidence plan
-→ review the final application
+→ generate and review a tailored resume for the selected job
 → submit it externally
 → record the outcome
 ```
+
+The daily run does not pre-generate a complete resume for every match. It
+creates lightweight fit/evidence plans for qualifying jobs, then spends full
+application effort only after the user selects a role. Cover letters and
+interview preparation remain available as direct Codex requests rather than
+dedicated MVP subsystems.
 
 ## 3. Interaction model
 
@@ -117,14 +132,16 @@ $ai-job-daily
 $ai-job-plan
 $ai-job-apply
 $ai-job-applications
-$ai-job-interview
-$ai-job-report
 ```
 
 The final implementation may combine some skills, but the user journeys and
 approval boundaries should remain. Later examples such as `/daily` and
 `/apply` are concise conceptual labels inherited from the source project; in
 Codex, use the equivalent natural-language request or `$ai-job-*` skill.
+
+Inherited `/gmail-sync`, `/interview`, `/upskill`, `/html-report`,
+`/notion-sync`, and `/add-portal` workflows are not reimplemented as dedicated
+lean-MVP services.
 
 ## 5. Journey 1: first-time setup
 
@@ -962,7 +979,7 @@ Was a cover letter submitted?
 
 The exact submitted artifacts are copied into the application archive and cannot be overwritten by later edits.
 
-## 15. Journey 11: application status and email
+## 15. Journey 11: application tracking and Excel export
 
 ### Open the application tracker
 
@@ -1095,21 +1112,19 @@ The generated workbook contains:
 
 Dates and monetary values are exported as usable Excel values, not decorative text, so you can sort, filter, calculate, and make your own charts.
 
-If spreadsheet round-trip is enabled, you can edit permitted cells and run:
+Spreadsheet round-trip is deferred. A future extension may allow permitted
+cells to be edited and previewed before import, but the lean MVP treats SQLite
+as authoritative and Excel as an export.
 
-```text
-/applications import application-tracker.xlsx
-```
+### Deferred: Gmail-assisted status
 
-The system validates the workbook and shows a row-by-row change preview. It does not update the tracker until you approve. Newer local changes are flagged as conflicts rather than overwritten.
-
-### Gmail-assisted status
+The inherited design proposed:
 
 ```text
 /gmail-sync
 ```
 
-The system presents proposals:
+If this integration is reactivated later, it would present proposals:
 
 ```text
 Proposed application updates
@@ -1135,7 +1150,7 @@ Approve 1. Skip 2.
 
 Only approved changes are written.
 
-## 16. Journey 12: interview preparation
+## 16. Deferred journey: dedicated interview-preparation subsystem
 
 ### Your action
 
@@ -1180,7 +1195,7 @@ Questions to ask
 
 You can start a mock interview or request a focused project deep dive.
 
-## 17. Journey 13: outcome-driven improvement
+## 17. Deferred journey: automatic outcome-driven improvement
 
 ### When it happens
 

@@ -1,8 +1,8 @@
 # AI-Driven Job Search: Detailed Implementation Plan
 
-**Status:** Proposed execution plan
-**Version:** 0.3
-**Date:** 2026-07-26
+**Status:** Approved lean personal-MVP execution plan
+**Version:** 0.4
+**Date:** 2026-08-28
 **Product specification:** [Product Specification](product-spec.md)
 **User experience:** [User Experience Journey](user-experience-journey.md)
 **System design:** [System Design](system-design.md)
@@ -26,6 +26,15 @@ It is intended to be used during implementation, not merely read as a roadmap. I
 - completion evidence to record.
 
 The plan implements the approved local-first architecture without prematurely adding a server or web frontend.
+
+### 1.1 Lean-MVP execution boundary
+
+The controlling MVP scope is limited to verified career evidence, official
+target-company monitoring, durable freshness, explainable ranking/evidence
+selection, on-demand tailored resumes, and application tracking with Excel
+export. Earlier work packages are retained for traceability, but integrations,
+broad portals, dashboards, automatic learning, speculative artifacts, and
+comprehensive legacy migration are deferred unless explicitly reactivated.
 
 ## 2. How to use this document
 
@@ -86,11 +95,22 @@ flowchart LR
     S2 --> S5
     S3 --> S6["Slice 6<br/>Daily intelligence"]
     S5 --> S6
-    S1 --> S7["Slice 7<br/>Integrations and learning"]
+    S1 --> S7["Deferred<br/>Integrations and learning"]
     S6 --> S7
 ```
 
-Default execution order is sequential: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7.
+The original slice numbering is retained for stable references. For the lean
+MVP, after the current foundation/tracker/evidence work, priority is:
+
+```text
+official target-company monitoring
+→ minimum role-track matching and evidence selection
+→ freshness-aware daily intelligence
+→ on-demand resume generation
+→ Excel tracker completion
+```
+
+Slice 7 is deferred backlog, not part of MVP completion.
 
 Slices 4 and 5 are technically separable after Slice 3, but completing application quality before daily automation keeps the first automated pipeline from producing more work than the application pipeline can safely handle.
 
@@ -175,9 +195,9 @@ migrations/
 ├── 0001_foundation.sql
 ├── 0002_applications.sql
 ├── 0003_evidence.sql
-├── 0004_matching.sql
-├── 0005_resume_plans.sql
-├── 0006_job_intelligence.sql
+├── 0004_company_monitoring.sql
+├── 0005_matching.sql
+├── 0006_resume_plans.sql
 └── 0007_external_signals.sql
 
 schemas/
@@ -239,9 +259,9 @@ These paths must be ignored and guarded before the first runtime command creates
 | `0001_foundation.sql` | `schema_migration`, `app_metadata`, `workflow_run`, `workflow_checkpoint`, `proposal`, `approval_event`, `audit_event`, `artifact` |
 | `0002_applications.sql` | `company`, `job`, `application`, `application_artifact`, `application_event`, `application_action`, `interview_event`, `compensation_record`, `offer`, `export_run`, `import_run` |
 | `0003_evidence.sql` | `source_artifact`, `source_span`, `experience`, `project`, `project_component`, `claim`, `claim_evidence`, `metric`, `claim_metric`, `skill`, `skill_alias`, `claim_skill` |
-| `0004_matching.sql` | `role_track`, `role_track_version`, `track_skill`, `search_preference`, `strategy_proposal`, `job_source_ref`, `job_snapshot`, `job_requirement`, `job_track_classification`, `requirement_claim_match` |
-| `0005_resume_plans.sql` | `resume_plan`, `resume_plan_item`, `resume_plan_gap`, `plan_override`, `artifact_claim`, `artifact_requirement`, `review_run` |
-| `0006_job_intelligence.sql` | `company_alias`, `company_track_interest`, `company_source`, `source_run`, `source_health_event`, `raw_observation`, `job_identity_candidate`, `fit_assessment`, `fit_factor`, `ranking_feedback` |
+| `0004_company_monitoring.sql` | `company_plan_entry`, `company_alias`, `company_source`, `source_run`, `source_health_event`, `raw_observation`, `job_source_ref`, `job_snapshot`, `job_freshness`, `job_identity_candidate` |
+| `0005_matching.sql` | `role_track`, `role_track_version`, `track_skill`, `search_preference`, `strategy_proposal`, `job_requirement`, `job_track_classification`, `requirement_claim_match`, `fit_assessment`, `fit_factor`, `ranking_feedback` |
+| `0006_resume_plans.sql` | `resume_plan`, `resume_plan_item`, `resume_plan_gap`, `plan_override`, `artifact_claim`, `artifact_requirement`, `review_run` |
 | `0007_external_signals.sql` | `external_signal`, `connector_cursor`, `calibration_proposal` |
 
 Rules:
@@ -1131,7 +1151,7 @@ Make career positioning explicit and demonstrate that the same evidence library 
 
 | Status | ID | Depends on | Deliverable |
 |---|---|---|---|
-| [ ] | TRK-001 | G2 | Role-track and job-matching schema in `0004_matching.sql` |
+| [ ] | TRK-001 | G2 | Role-track and job-matching schema in `0005_matching.sql` |
 | [ ] | TRK-002 | TRK-001 | Versioned track configuration loader |
 | [ ] | TRK-003 | TRK-002 | Track query/edit/proposal commands |
 | [ ] | JOB-IMP-001 | TRK-001 | Manual URL/text posting import and snapshot |
@@ -1139,7 +1159,7 @@ Make career positioning explicit and demonstrate that the same evidence library 
 | [ ] | CLS-001 | TRK-002, REQ-001 | Multi-track classification |
 | [ ] | MAP-001 | REQ-001, EVD-005 | Requirement-to-claim candidate retrieval |
 | [ ] | MAP-002 | MAP-001, AGT-001 | Direct/adjacent/gap validation |
-| [ ] | SEL-001 | TRK-002, MAP-002 | `0005_resume_plans.sql` and candidate features |
+| [ ] | SEL-001 | TRK-002, MAP-002 | `0006_resume_plans.sql` and candidate features |
 | [ ] | SEL-002 | SEL-001 | Deterministic constrained greedy selector |
 | [ ] | SEL-003 | SEL-002, GOV-002 | Plan explanation, override, and approval |
 | [ ] | CMD-PLAN-001 | SEL-003 | `/tracks` and `/plan` command specifications |
@@ -1451,19 +1471,19 @@ Monitor employer career sources as the source of truth and implement literal job
 
 | Status | ID | Depends on | Deliverable |
 |---|---|---|---|
-| [ ] | COM-001 | G3 | Company/source schema in `0006_job_intelligence.sql` |
+| [x] | COM-001 | G2 | Company/source schema in `0004_company_monitoring.sql` |
 | [ ] | COM-002 | COM-001 | Company registry, aliases, tiers, track interests |
-| [ ] | SRC-001 | COM-001 | Official adapter interface and HTTP safety layer |
+| [ ] | SRC-001 | COM-001 | Official adapter interface and HTTP safety layer (partial: bounded HTTPS fetch implemented) |
 | [ ] | DET-001 | SRC-001 | Official ATS/source detection |
 | [ ] | ADP-GH-001 | SRC-001 | Greenhouse adapter |
-| [ ] | ADP-AS-001 | SRC-001 | Ashby adapter |
+| [ ] | ADP-AS-001 | SRC-001 | Ashby adapter (partial: health, full-snapshot poll, and normalization implemented) |
 | [ ] | ADP-LV-001 | SRC-001 | Lever adapter |
 | [ ] | ADP-SR-001 | SRC-001 | SmartRecruiters adapter |
-| [ ] | JOB-001 | adapters | Observation normalizer |
+| [ ] | JOB-001 | adapters | Observation normalizer (partial: Ashby implemented) |
 | [ ] | JOB-002 | JOB-001 | Canonical identity and deduplication |
-| [ ] | SNAP-001 | JOB-002 | Immutable snapshots and lifecycle |
-| [ ] | FRESH-001 | SNAP-001 | Freshness decision engine |
-| [ ] | HEALTH-001 | SRC-001 | Source health and semantic checks |
+| [ ] | SNAP-001 | JOB-002 | Immutable snapshots and lifecycle (partial: Ashby snapshots/open lifecycle implemented) |
+| [ ] | FRESH-001 | SNAP-001 | Freshness decision engine (partial: baseline/new/update/reopen implemented) |
+| [ ] | HEALTH-001 | SRC-001 | Source health and semantic checks (partial: health and poll failures persist) |
 | [ ] | VERIFY-001 | FRESH-001 | Pre-report verification |
 | [ ] | CMD-COM-001 | all above | `/companies` and `/watch-companies` specifications |
 | [ ] | DOC-COM-001 | all Slice 5 | Source/authority documentation |
@@ -1791,11 +1811,15 @@ G6 passes when:
 - [ ] scheduling cannot overlap or auto-apply;
 - [ ] source health, latency, and cost are reportable.
 
-## 15. Slice 7 — Controlled integrations and learning
+## 15. Deferred backlog — Controlled integrations and learning
 
 ### 15.1 Objective
 
 Add optional external signals, spreadsheet round-trip, interview consistency, and evidence-based calibration without weakening user control.
+
+This entire section is retained for traceability and is not required for the
+lean personal MVP. None of these work packages should start without a new,
+explicit user-approved scope decision.
 
 ### 15.2 Work packages
 
@@ -2174,26 +2198,27 @@ Do not combine schema changes, migration of personal data, and command cutover i
 
 ## 24. Definition of done for MVP
 
-MVP is done when G0–G6 pass and:
+The lean personal MVP is done when the relevant G0–G6 acceptance checks pass
+for the approved scope and:
 
 - Codex is the primary supported agent environment;
 - no Claude subscription, Anthropic dependency, or direct provider API key is
   needed for interactive use;
-- all P0 requirements are implemented or explicitly deferred through approved product change;
+- P0 requirements outside the controlling lean scope are recorded as deferred;
 - user can import career evidence and approve claims;
 - at least two materially different tracks work;
-- official target-company monitoring works for the four initial ATS families;
-- daily report distinguishes verified new, date unknown, updated, reposted, reopened, and aggregator-only;
+- official monitoring covers the source families required by the target-company list and visibly reports unsupported sources;
+- daily report distinguishes verified new, date unknown, updated, reposted, and reopened;
 - resume plans select project components and explain exclusions;
-- T3 resumes use approved claims only;
+- selected-job resumes use approved claims only;
 - final artifacts pass required validation;
 - applications have event history, deadlines, compensation, and immutable submitted versions;
 - Excel export is usable;
-- backup/restore and legacy migration are demonstrated;
+- backup and restore are demonstrated;
 - security and data-retention documentation is complete;
 - existing inherited functionality not yet cut over still works.
 
-Slice 7 is the first extended release unless a specific integration becomes necessary for MVP operation.
+Deferred features are reconsidered only after actual use shows a recurring need.
 
 ## 25. First implementation session
 
@@ -2227,6 +2252,12 @@ Add entries newest last.
 | 2026-07-26 | FND-001, FND-002, SEC-001, CFG-001, CTR-001, DB-001–003, CLI-001, COD-001–002 | Foundation package, private paths, configuration, JSON CLI, three migrations, Codex skills, empty local database; tracker/evidence vertical slices started | 150 tests pass; SQLite integrity, security guard, framework-version guard | Proposal/audit/run depth, restore, full reset scopes, legacy tracker migration, and Excel remain open; evidence inventory is now blocked on real CV/project input |
 | 2026-08-19 | ING-001, ING-002 partial | Registered and extracted the first real resume through the CLI; added source-bound structured extraction proposals and created one pending resume proposal | Resume PDF rendered and text-checked; source hash and private cache recorded; proposal contains 4 experiences, 4 resume-derived projects, 37 skills, and 1 education record | Proposal remains unapproved; Overleaf source and project documents are still needed for editable-template validation and stronger project evidence |
 | 2026-08-19 | COM-002 partial | Added a private, source-bound target-company plan importer and normalized separate technology and trading company tables | 35 technology and 16 trading entries parsed; market-specific ranks and ratings preserved; synthetic parser/proposal tests pass | Plans remain proposals until the company registry and official-source monitoring slice lands; no live monitoring is claimed |
+| 2026-08-27 | EVD-003–006 partial | Added read-only claim inspection, fallback token/skill/tag search, and explainable final-application eligibility | Synthetic policy/search tests plus real approved-evidence CLI smoke check; full repository gates pass on the implementation branch | Collaboration boundaries remain visible guardrails but are excluded from selection; role-track mapping and resume-plan selection remain next |
+| 2026-09-01 | COM-001, COM-002 partial, DET-001 partial | Added the official-monitoring schema, atomic plan approval, registry queries, and proposal-gated HTTPS/ATS source registration; approved both market plans and registered verified Etched and Fireworks AI sources locally | Pre-migration verified backup; SQLite integrity; 54 active entries (38 technology, 16 trading); 2 disabled sources awaiting health checks; synthetic URL-policy, stale-version, replacement, idempotency, and application-regression tests | No source is health-checked, enabled, or polled yet; 52 targets still need verified official sources; stale superseded proposals remain visible history |
+| 2026-09-01 | SRC-001 partial, ADP-AS-001 partial, HEALTH-001 partial | Added a bounded HTTPS client and persistent source-health command; live-checked the two registered sources without enabling either | Public-IP and host allowlist, redirect, content-type, response-size, ATS-schema, and failure-recording tests; Etched Ashby schema healthy with 108 records; Fireworks careers page reachable but unverified | Poll/detail contracts, retry/backoff, enablement, observations, and freshness remain; two initial sandbox DNS failures are preserved as health history rather than erased |
+| 2026-09-01 | ADP-AS-001 partial, JOB-001 partial, SNAP-001 partial, FRESH-001 partial | Added proposal-gated source enablement, Ashby full-snapshot ingestion, immutable observations/snapshots, open/closed/reopened lifecycle, freshness records, and monitored-job queries | Synthetic first poll is entirely `baseline_existing`; incremental fixtures distinguish new/updated/unchanged/closed/reopened; failures degrade source health; real Etched enablement proposal is pending and no real jobs were imported | Etched remains disabled pending explicit approval; publication-window, likely-repost, detail verification, retry/backoff, ranking, reports, and scheduling remain |
+| 2026-09-01 | DET-001 partial, DAY-002 partial | Added bounded ATS-link detection and a read-only daily JSON report with source coverage, health, and baseline exclusion | Synthetic ATS-link deduplication and report grouping; live Fireworks official page resolves to Ashby key `fireworks`; real report truthfully shows 54 targets, 2 registered, 0 enabled, 0 findings | Fireworks Ashby registration proposal is pending; report is intentionally unranked; output persistence, ranking, recommendations, and scheduling remain |
+| 2026-09-02 | ADP-AS-001 partial, SNAP-001 partial, FRESH-001 partial | With explicit user authorization, approved Etched enablement and Fireworks Ashby registration/enablement, then established both real baselines | Verified pre-action backup; healthy Ashby checks; first polls imported 108 Etched and 66 Fireworks roles; all 174 are `baseline_existing`, zero new; daily report shows 2 healthy enabled companies and 0 reportable findings; SQLite integrity passes | Recurring scheduling is not active; 52 target companies still lack registered sources; the disabled Fireworks custom-page source remains as audit history; matching/ranking is not implemented |
 
 ## 27. Decision log
 
@@ -2238,6 +2269,8 @@ Add entries newest last.
 | IMP-DEC-004 | 2026-07-25 | Keep live source checks outside CI | Avoids flaky, abusive, or terms-incompatible automated traffic | Slices 5–6 |
 | IMP-DEC-005 | 2026-07-25 | Make Codex the only required agent environment | Matches the user's available tool and removes the Claude subscription dependency | COD-001, COD-002, AGT-001 |
 | IMP-DEC-006 | 2026-07-25 | Use Codex scheduling for reasoning and OS scheduling only as a deterministic fallback | Keeps unattended polling reliable without pretending deterministic code can perform interactive reasoning | SCHED-001, DAY-001–003 |
+| IMP-DEC-007 | 2026-08-28 | Narrow the product to a lean personal MVP with five durable capabilities | Codex already provides flexible reasoning; custom code should focus on persistent state, repeatable monitoring, safety, and export | Slices 1–7; deferred backlog |
+| IMP-DEC-008 | 2026-09-01 | Move official-company monitoring schema ahead of matching and resume-plan migrations | Monitoring the approved target list is the highest-value lean-MVP automation, and migrations 0004+ had not yet shipped | COM-001 onward; TRK-001; SEL-001 |
 
 ## 28. Plan summary
 
@@ -2246,22 +2279,19 @@ First:
 secure runtime + SQLite + migrations + proposals + artifacts + backup
 
 Then:
-application event tracker + legacy import + Excel export
+career evidence + official target-company monitoring + literal freshness
 
 Then:
-career evidence + role tracks + explainable project selection
+minimum role tracks + explainable project selection + daily ranking
 
 Then:
-grounded drafter/reviewer + LaTeX/PDF/ATS finalization
+on-demand tailored .tex resume + PDF/ATS validation
 
 Then:
-official employer monitoring + literal freshness
+application event tracker + Excel export
 
-Then:
-idempotent daily ranking/reporting + local scheduling
-
-Finally:
-Gmail signals + Excel import + outcome calibration + legacy retirement
+Deferred unless usage justifies it:
+broad portals + integrations + dashboards + automatic learning + legacy migration
 ```
 
 This order lets every later feature reuse tested state, approval, provenance, recovery, and reporting foundations.

@@ -1,8 +1,8 @@
 # AI-Driven Job Search: Product Specification
 
-**Status:** Consolidated draft for review
-**Version:** 0.5
-**Date:** 2026-07-26
+**Status:** Approved lean personal-MVP scope
+**Version:** 0.6
+**Date:** 2026-08-28
 **Repository:** [`xzhnshng/ai-job-search`](https://github.com/xzhnshng/ai-job-search)
 **Product owner:** Repository owner
 
@@ -24,6 +24,30 @@ preparing high-quality applications.
 The technical identifiers remain unchanged for repository compatibility and
 shorter commands. They do not represent a different product or an older
 product name.
+
+### 1.2 Controlling lean-MVP decision
+
+The approved personal MVP is intentionally narrower than the inherited feature
+catalog and earlier sections of this specification. When a detailed
+requirement conflicts with this decision, this section controls MVP scope.
+
+The MVP has five durable product capabilities:
+
+1. maintain a verified career-evidence and project library;
+2. monitor official career sources for the user's target companies;
+3. preserve observations so job freshness is evidence-based;
+4. rank jobs and select the strongest truthful resume evidence;
+5. track applications and export the tracker to Excel.
+
+Codex remains the reasoning interface. It may research companies, draft and
+review a tailored resume, prepare interview material, or write a cover letter
+on request. Those useful interactive abilities do not require separate
+subsystems in the personal MVP.
+
+Every qualifying daily job may receive a lightweight fit and resume-evidence
+plan. A complete `.tex` resume is generated only for a user-selected or
+explicitly high-priority job. Cover letters are generated only when required.
+No application is submitted automatically.
 
 It converts the earlier analysis into product requirements:
 
@@ -50,18 +74,10 @@ The next product must retain those strengths while solving a broader problem:
 
 > The user has a large body of projects, experiences, research, and technical evidence that should be selected and framed differently for software engineering, distributed systems, AI/ML engineering, research, quantitative, and biotech roles.
 
-The product must therefore become more than a prose profile plus application workflow. It needs:
-
-1. a structured career evidence base;
-2. explicit career-track definitions;
-3. explainable job-to-evidence matching;
-4. project and project-component selection;
-5. tiered resume generation;
-6. a target-company watchlist that treats official career sites as the job source of truth;
-7. timestamp-aware freshness, repost detection, and source-health monitoring;
-8. configurable broader job discovery and company research;
-9. a daily digest and review queue;
-10. outcome tracking and human-approved strategy calibration.
+The product must therefore combine five things: structured evidence,
+official-company monitoring, durable freshness state, explainable job and
+project selection, and application tracking. Tailored resume generation is an
+on-demand Codex workflow built on that durable core.
 
 The product remains selective rather than volume-oriented. It will not automatically submit applications.
 
@@ -93,7 +109,7 @@ The system is:
 - a job intelligence and prioritization assistant;
 - an evidence-to-resume composition engine;
 - a human-supervised application workflow;
-- a learning and feedback system.
+- a durable application tracker.
 
 The system is not:
 
@@ -286,7 +302,9 @@ Never label a job “published today” unless an authoritative source provides 
 
 ### 9.1 MVP objective
 
-The MVP proves that structured evidence and role-track strategies produce better, explainable project selection and tailored resumes for real jobs.
+The MVP proves that official-source monitoring plus structured evidence can
+reliably identify new target-company jobs, explain their fit, select the right
+projects, prepare a truthful resume on demand, and preserve application state.
 
 ### 9.2 MVP role-track waves
 
@@ -316,37 +334,46 @@ The underlying schema must support every track from the start. Track templates a
 
 The MVP includes:
 
-- source-document ingestion;
-- project and claim library;
-- role-track definitions;
-- manual job import;
-- target-company registry;
-- official ATS and career-site detection;
-- baseline and incremental company snapshots;
-- job freshness classification;
-- existing portal discovery as supplemental coverage;
-- track classification;
-- hard filters and explainable ranking;
-- requirement-to-evidence matrix;
-- project-component selection;
-- role-track resume baselines;
-- tailored resume generation;
-- fresh reviewer;
-- PDF and ATS verification;
-- application tracking;
-- manual daily digest generation.
+- CV and project-document ingestion with approved claims and metrics;
+- role-track definitions needed for the user's active job variants;
+- target-company registry and official ATS/career-source monitoring;
+- durable baselines, incremental observations, deduplication, source health,
+  and literal freshness classification;
+- scheduled or manually triggered daily reports;
+- hard filters, explainable ranking, and visible gaps;
+- requirement-to-evidence mapping and project-component selection;
+- lightweight evidence plans for qualifying jobs;
+- on-demand tailored `.tex` resume generation, review, PDF compilation, and
+  ATS verification for selected jobs;
+- application events, interviews, results, compensation, deadlines, and Excel
+  export.
 
-### 9.4 Post-MVP scope
+### 9.4 Deferred scope
 
-- scheduled daily runs;
-- broader ATS coverage and custom company-site adapters;
-- company-priority polling schedules;
-- richer company intelligence;
-- cover-letter strategy by market;
-- automated but approval-gated Gmail status classification;
-- outcome-based calibration proposals;
-- dashboards;
-- more advanced portfolio and interview support.
+The following are not required for the personal MVP:
+
+- broad daily scraping of LinkedIn or general job boards;
+- automatic portal-adapter generation and monitoring outside the target list;
+- speculative full resumes or cover letters for every detected job;
+- an autonomous multi-agent application service or automatic submission;
+- diploma, transcript, publication, reference-letter, citation, and public
+  profile expansion pipelines;
+- Gmail, calendar, Notion, Airtable, cloud-storage, or other account
+  integrations;
+- automatic email follow-ups;
+- a web/mobile interface, hosted service, accounts, or multi-user support;
+- embeddings, a vector database, distributed workers, or multi-provider AI
+  abstractions;
+- automatic outcome learning, self-adjusting ranking weights, labor-market
+  analytics, and dedicated upskilling engines;
+- dedicated interview, mock-interview, HTML-dashboard, and compensation-data
+  subsystems;
+- spreadsheet re-import and full inherited-workflow migration.
+
+Codex may still perform one-off browsing, company research, cover-letter
+drafting, interview preparation, or learning-plan work without turning those
+activities into permanent product infrastructure. Deferred features require a
+new user-approved scope decision supported by actual usage evidence.
 
 ## 10. Product experience overview
 
@@ -373,8 +400,7 @@ flowchart TD
     REVIEW --> VERIFY["Grounding, PDF, and ATS checks"]
     VERIFY --> FINAL["User reviews and submits externally"]
     FINAL --> OUTCOME["Track outcome"]
-    OUTCOME --> LEARN["Propose strategy calibration"]
-    LEARN --> TRACKS
+    OUTCOME --> DIGEST
 ```
 
 ## 11. Functional requirements
@@ -1418,7 +1444,11 @@ Tracker and report views must distinguish:
 
 Dates must be stored with timezone information when time-of-day matters. Date-only events such as an offer deadline must remain date-only rather than being silently shifted across timezones.
 
-## 22. Interview and skill development
+## 22. Deferred interview and skill-development requirements
+
+These P1 requirements are retained as future reference and are not part of the
+lean personal MVP. Equivalent one-off help may be requested directly from
+Codex using the submitted application evidence.
 
 ### FR-INT-001 — Application-consistent prep — P1
 
@@ -1553,23 +1583,22 @@ to validated CLI operations.
 | `/companies list` | Review target companies, priorities, and source health |
 | `/companies health` | Diagnose official company-source coverage |
 | `/watch-companies` | Poll official career sources and update snapshots |
-| `/scrape` | Search supplemental portals and normalize additional jobs |
 | `/rank` | Hard-filter, classify, and rank jobs |
 | `/plan <job>` | Build requirement matrix and resume evidence plan |
-| `/apply <job>` | Generate and verify T2/T3 artifacts |
+| `/apply <job>` | On demand, generate and verify a tailored `.tex` resume for a selected job |
 | `/daily` | Verify watched-company jobs and produce the freshness-aware review queue |
 | `/applications` | View, search, sort, and filter the application tracker |
 | `/applications update <application>` | Update status, dates, next actions, results, compensation, or notes |
 | `/applications export [xlsx]` | Export the current view or full tracker to Excel |
-| `/applications import <xlsx>` | Preview and approve permitted spreadsheet changes |
 | `/outcome` | Add a timeline event or final outcome |
-| `/interview` | Build application-consistent prep |
-| `/upskill` | Generate track-specific learning plan |
-| `/report` | Generate pipeline and performance views |
 
 Command names are conceptual workflow names, not a commitment to Claude-style
 slash commands. The implementation must provide equivalent Codex skills and
 natural-language journeys.
+
+Supplemental portal search, spreadsheet import, dedicated interview/upskill
+commands, integrations, and dashboards are deferred. Codex may still help with
+their underlying one-off tasks when requested.
 
 ## 25. Non-functional requirements
 
@@ -1716,9 +1745,11 @@ The MVP is complete when all of the following are demonstrable:
 
 ### Evidence foundation
 
-- At least 20 projects can be imported or created.
+- The user's initial approved project set can be imported and extended without
+  rewriting original documents.
 - Each project supports multiple components.
-- At least 100 atomic claims can be stored and reviewed.
+- At least 40 atomic claims can be stored and reviewed in the initial real-data
+  acceptance run.
 - Every approved claim links to evidence.
 - Conflicts are presented and resolved without overwriting source history.
 
@@ -1739,13 +1770,13 @@ The MVP is complete when all of the following are demonstrable:
 
 - At least 20 target companies can be registered.
 - Each company can be assigned a priority tier and role-track interests.
-- The system can identify and monitor at least Greenhouse, Ashby, Lever, and SmartRecruiters company sources.
+- The system supports the official ATS/source families actually used by the
+  approved target-company list; unsupported companies remain visibly degraded.
 - The first check creates a baseline without calling existing jobs new.
 - A later check identifies added, changed, closed, reopened, and likely reposted jobs.
 - Publication, update, first-seen, and last-seen timestamps remain distinct.
 - Every job has a freshness classification, confidence, and explanation.
 - Official-source failure appears in source health and never silently becomes zero jobs.
-- A LinkedIn-only result is labeled as supplemental or aggregator-only.
 - The daily report separates verified-new jobs from newly detected and reposted jobs.
 
 ### Project selection
@@ -1758,7 +1789,7 @@ The MVP is complete when all of the following are demonstrable:
 ### Resume generation
 
 - A track baseline can be generated.
-- A job-specific T2 resume can be produced from approved claims only.
+- A job-specific resume can be produced on demand from approved claims only.
 - A fresh reviewer can challenge selection and wording.
 - The final PDF passes page/layout validation.
 - ATS text extraction is checked when Poppler is available.
@@ -1767,7 +1798,8 @@ The MVP is complete when all of the following are demonstrable:
 ### Operations
 
 - Discovery state deduplicates repeated runs.
-- A daily report can be generated manually.
+- A daily report can be generated manually and by the configured Codex
+  schedule.
 - Watched-company jobs are verified against the official source before reporting.
 - Applications and submitted versions can be archived.
 - Every application appears in a filterable tracker with its current state and full timeline.
@@ -1775,7 +1807,6 @@ The MVP is complete when all of the following are demonstrable:
 - Tracker status changes preserve earlier milestones and record an audit entry.
 - A valid `.xlsx` export contains `Applications`, `Timeline`, `Offers`, and `Lookups` sheets.
 - Excel dates, numbers, currencies, and links remain sortable and usable after export.
-- Spreadsheet re-import, if included in the release, previews and validates changes before writing.
 - No command submits an application.
 
 ## 29. Release plan
@@ -1834,14 +1865,15 @@ The MVP is complete when all of the following are demonstrable:
 - review queue;
 - company-source, portal-health, and cost reporting;
 - retries and resumability;
-- additional ATS and supplemental portals.
+- additional official-source adapters required by the target-company list.
 
-### Phase 6 — Outcome learning
+### Deferred backlog — only after usage review
 
-- performance reporting;
-- calibration proposals;
-- Wave 2 and Wave 3 tracks;
-- track-specific interview and upskill flows.
+- broader portals and company intelligence;
+- integrations and dashboards;
+- automatic outcome calibration;
+- dedicated interview and upskill systems;
+- Wave 2 and Wave 3 tracks beyond those actively needed.
 
 ## 30. Risks
 
@@ -1889,7 +1921,20 @@ Any future unattended non-interactive reasoning mode must declare its own
 authentication, cost, failure, and approval model instead of silently adding a
 provider dependency.
 
-## 32. Open product decisions
+## 32. Product decisions
+
+### 32.1 Resolved by the lean-MVP decision
+
+- Supplemental portals have no MVP priority; official target-company sources
+  are authoritative and one-off Codex browsing remains available.
+- Cover letters are created only when the selected job requires one or the user
+  requests one.
+- Automatic outcome calibration is deferred; tracked outcomes do not silently
+  change strategy.
+- Full resumes are generated on demand for selected or explicitly
+  high-priority jobs, not for every daily match.
+
+### 32.2 Remaining open decisions
 
 These decisions should be resolved before detailed design:
 
@@ -1909,9 +1954,6 @@ These decisions should be resolved before detailed design:
 14. How many companies should the MVP watch?
 15. Which official ATS families must the first implementation support beyond Greenhouse, Ashby, Lever, and SmartRecruiters?
 16. What polling intervals are acceptable for each company tier?
-17. Which supplemental portals are highest priority outside Denmark?
-18. Should cover letters be generated by default or only when requested?
-19. Which outcome count is sufficient before proposing calibration?
 
 ## 33. Recommended next artifact
 

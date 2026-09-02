@@ -1,8 +1,8 @@
 # AI-Driven Job Search: System Design
 
-**Status:** Proposed technical design
-**Version:** 0.3
-**Date:** 2026-07-26
+**Status:** Proposed technical design aligned to lean personal MVP
+**Version:** 0.4
+**Date:** 2026-08-28
 **Product specification:** [Product Specification](product-spec.md)
 **User experience:** [User Experience Journey](user-experience-journey.md)
 **Current-system analysis:** [Technical Deep Analysis](technical-deep-analysis.md)
@@ -73,18 +73,16 @@ The agent remains the interaction and reasoning layer. It is no longer trusted t
 - configurable career tracks;
 - target-company registry;
 - official company career-site and ATS monitoring;
-- supplemental portal ingestion;
 - job snapshots, deduplication, and freshness classification;
 - fit scoring with confidence and evidence;
 - requirement-to-evidence mapping;
 - explainable project and claim selection;
-- reviewed resume and cover-letter generation;
+- on-demand reviewed `.tex` resume generation for selected jobs;
 - application tracker and event timeline;
 - salary, offer, interview, and deadline tracking;
-- `.xlsx` export and controlled import;
-- Codex-invoked daily runs, Codex scheduled tasks, and a deterministic
-  operating-system scheduler fallback;
-- local reports, backups, audit history, and migration.
+- `.xlsx` export;
+- Codex-invoked and Codex-scheduled daily runs;
+- local daily reports, backups, and audit history.
 
 ### 3.2 Not in scope for MVP
 
@@ -99,8 +97,24 @@ The agent remains the interaction and reasoning layer. It is no longer trusted t
 - causal claims from sparse application outcomes;
 - vector infrastructure or a remote embedding database;
 - automatic compensation negotiation.
+- broad portal scraping outside the target-company registry;
+- speculative application artifacts for every detected job;
+- cover-letter, interview, upskill, email, integration, dashboard, and
+  outcome-learning subsystems;
+- spreadsheet re-import and comprehensive legacy-workflow migration.
 
 The component boundaries below leave room for a future UI or hosted mode without requiring either now.
+
+### 3.3 Lean-MVP responsibility boundary
+
+The local program owns deterministic memory and repetition: source baselines,
+hashes, deduplication, freshness, claim eligibility, tracking, export, backup,
+and audit. Codex owns judgment: qualitative research, semantic job analysis,
+project selection explanations, drafting, and fresh-context review.
+
+An interactive Codex capability is not by itself a reason to build a permanent
+adapter or subsystem. New infrastructure enters scope only when repeated use
+shows that durable automation is necessary.
 
 ## 4. Constraints inherited from the repository
 
@@ -306,9 +320,9 @@ ai-job-search/
 │   ├── 0001_foundation.sql         # shared run, audit, proposal, artifact tables
 │   ├── 0002_applications.sql       # tracker, interview, salary, and offer tables
 │   ├── 0003_evidence.sql           # projects, claims, metrics, and source links
-│   ├── 0004_matching.sql           # role tracks, requirements, and matches
-│   ├── 0005_resume_plans.sql       # selected resume evidence and review records
-│   ├── 0006_job_intelligence.sql   # sources, snapshots, freshness, and ranking
+│   ├── 0004_company_monitoring.sql # target plans, sources, snapshots, freshness
+│   ├── 0005_matching.sql           # role tracks, requirements, matches, ranking
+│   ├── 0006_resume_plans.sql       # selected resume evidence and review records
 │   └── ...                         # future changes get a new numbered file
 ├── schemas/                        # JSON shapes for external/Codex boundaries
 │   ├── adapter-result.schema.json  # required output from every job-source adapter
@@ -1529,7 +1543,7 @@ Import is a proposal workflow:
 9. require approval;
 10. apply transactionally.
 
-MVP export is P0. Round-trip import is P1 and may ship later.
+MVP export is P0. Round-trip import is deferred by the lean-MVP decision.
 
 The importer never:
 
@@ -1539,7 +1553,10 @@ The importer never:
 - imports formulas as executable values;
 - trusts workbook paths.
 
-## 28. Email and external-signal integration
+## 28. Deferred extension: email and external-signal integration
+
+This section is retained as a future safety design and is not part of the lean
+personal MVP.
 
 Gmail remains a read-only signal source.
 
@@ -1570,7 +1587,6 @@ Notion and future external dashboards consume exported projections. They are not
 | `/companies list` | Company/source query |
 | `/companies health` | Health-check workflow |
 | `/watch-companies` | Official-source polling workflow |
-| `/scrape` | Supplemental-source workflow |
 | `/rank` | Requirement extraction and assessment workflow |
 | `/daily` | Daily coordinator |
 | `/plan` | Requirement mapping and evidence selector |
@@ -1578,10 +1594,7 @@ Notion and future external dashboards consume exported projections. They are not
 | `/applications` | Tracker query service |
 | `/applications update` | Application proposal service |
 | `/applications export` | Excel export service |
-| `/applications import` | Excel import proposal service |
 | `/outcome` | Application event service |
-| `/interview` | Submitted-artifact interview service |
-| `/report` | Local report projections |
 
 The agent command may combine multiple CLI calls, but all persistent mutations pass through these services.
 
@@ -2016,7 +2029,6 @@ Exit: target-company jobs are monitored without mislabeling baseline or aggregat
 
 ### Slice 6 — Daily intelligence and operations
 
-- supplemental wrapper;
 - hard filters and ranking;
 - daily coordinator/report;
 - scheduling;
@@ -2024,7 +2036,7 @@ Exit: target-company jobs are monitored without mislabeling baseline or aggregat
 
 Exit: one idempotent daily run produces a useful freshness-aware queue despite partial source failure.
 
-### Slice 7 — Controlled integrations and learning
+### Deferred extension — Controlled integrations and learning
 
 - Gmail signal ingestion;
 - Excel round-trip;
@@ -2033,6 +2045,11 @@ Exit: one idempotent daily run produces a useful freshness-aware queue despite p
 - later role-track waves.
 
 Exit: external signals and learned strategy changes remain approval-gated and auditable.
+
+This extension is not part of the lean personal MVP. Detailed integration,
+supplemental-portal, dashboard, and learning sections elsewhere in this design
+are retained as future reference rather than current implementation
+commitments.
 
 ## 40. Requirement traceability
 
@@ -2064,9 +2081,6 @@ These do not block the foundational architecture:
 6. scheduled report time;
 7. maximum daily deep-ranking and drafting budgets;
 8. acceptable company-outlook sources;
-9. cover-letter default behavior;
-10. outcome sample threshold for calibration proposals.
-
 They are stored as configuration or versioned policy rather than hard-coded architecture.
 
 ## 42. Alternatives considered

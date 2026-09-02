@@ -11,8 +11,9 @@ enabled: true
 
 # AI-Driven Job Search Daily Workflow
 
-Target-company plan import is available. Daily discovery and official-source
-monitoring are not available until implementation Slices 5 and 6 pass.
+Target-company plan import, approval, and registry inspection are available.
+Daily discovery and official-source polling are not available until the
+remaining monitoring and daily-intelligence work passes.
 
 Current plan operations:
 
@@ -20,7 +21,51 @@ Current plan operations:
 PYTHONPATH=src python3 -m ai_job_search --json companies plan-import \
   --path <documents-path> --source-id <source-id> --market technology|trading
 PYTHONPATH=src python3 -m ai_job_search --json companies plan-show <proposal-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies plan-list \
+  [--state pending|approved|rejected] [--market technology|trading]
+PYTHONPATH=src python3 -m ai_job_search --json companies plan-approve \
+  <proposal-id> --actor candidate --reason <review-note>
+PYTHONPATH=src python3 -m ai_job_search --json companies list \
+  [--market technology|trading]
+PYTHONPATH=src python3 -m ai_job_search --json companies show <company-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-propose \
+  --company <id-or-exact-name> --career-url <https-url> \
+  --evidence-url <official-page> --detection-note <review-note> \
+  [--adapter ashby|greenhouse|lever|smartrecruiters|custom|unsupported] \
+  [--tier A|B|C]
+PYTHONPATH=src python3 -m ai_job_search --json companies source-proposal-show \
+  <proposal-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-approve \
+  <proposal-id> --actor candidate --reason <review-note>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-health-check \
+  <company-source-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-detect \
+  <company-source-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-enable-propose \
+  <company-source-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-enable-proposal-show \
+  <proposal-id>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-enable-approve \
+  <proposal-id> --actor candidate --reason <review-note>
+PYTHONPATH=src python3 -m ai_job_search --json companies source-poll \
+  <company-source-id>
+PYTHONPATH=src python3 -m ai_job_search --json jobs list \
+  [--classification <freshness-class>] [--classified-since <ISO-8601>]
+PYTHONPATH=src python3 -m ai_job_search --json jobs show <job-id>
+PYTHONPATH=src python3 -m ai_job_search --json daily report \
+  --since <ISO-8601> [--before <ISO-8601>]
 ```
+
+Source approval registers the URL as disabled with `not_checked` health. A
+health check records bounded HTTP and schema evidence but never enables the
+source. Enablement itself is proposal-gated. The first poll is always baseline
+and must never be reported as newly released. Do not claim recurring monitoring
+is active until enablement, a successful baseline, and scheduling all exist.
+
+The current daily report is read-only and intentionally unranked. It excludes
+`baseline_existing`, includes source coverage and health, and must warn that an
+empty report is not evidence of no openings when sources are disabled or
+unhealthy.
 
 Keep rankings separate by market unless the user explicitly defines a shared
 scoring model. Treat ranks, fit, income, ML opportunity, and recommendation as

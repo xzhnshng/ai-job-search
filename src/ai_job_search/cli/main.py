@@ -19,8 +19,23 @@ from ai_job_search.domain.applications.service import (
     timeline,
 )
 from ai_job_search.domain.companies.planning import (
+    approve_company_plan_proposal,
     create_company_plan_proposal,
+    get_target_company,
     get_company_plan_proposal,
+    list_company_plan_proposals,
+    list_target_companies,
+)
+from ai_job_search.domain.companies.polling import poll_company_source
+from ai_job_search.domain.companies.sources import (
+    approve_company_source_enablement_proposal,
+    approve_company_source_proposal,
+    check_company_source_health,
+    create_company_source_enablement_proposal,
+    create_company_source_proposal,
+    detect_linked_ats_sources,
+    get_company_source_enablement_proposal,
+    get_company_source_proposal,
 )
 from ai_job_search.domain.evidence.inventory import inventory_sources
 from ai_job_search.domain.evidence.ingestion import (
@@ -30,6 +45,17 @@ from ai_job_search.domain.evidence.ingestion import (
     list_sources,
     register_source,
 )
+from ai_job_search.domain.evidence.query import (
+    EligibilityContext,
+    get_claim,
+    list_claims,
+)
+from ai_job_search.domain.jobs.query import (
+    FRESHNESS_CLASSIFICATIONS,
+    get_monitored_job,
+    list_monitored_jobs,
+)
+from ai_job_search.domain.jobs.report import build_daily_report
 from ai_job_search.infrastructure.files.config_loader import load_config
 from ai_job_search.infrastructure.files.paths import RuntimePaths
 from ai_job_search.infrastructure.sqlite.backup import create_backup
@@ -108,6 +134,41 @@ def parser() -> argparse.ArgumentParser:
     evidence_approve.add_argument("proposal_id")
     evidence_approve.add_argument("--actor", default="user")
     evidence_approve.add_argument("--reason")
+    evidence_claims = evidence_sub.add_parser("claims")
+    evidence_claims.add_argument("--query")
+    evidence_claims.add_argument("--project")
+    evidence_claims.add_argument("--skill")
+    evidence_claims.add_argument("--tag")
+    evidence_claims.add_argument("--type", action="append", dest="claim_types")
+    evidence_claims.add_argument("--verification", action="append")
+    evidence_claims.add_argument("--confidentiality", action="append")
+    evidence_claims.add_argument("--eligible-only", action="store_true")
+    evidence_claims.add_argument(
+        "--allow-confidentiality",
+        action="append",
+        default=None,
+        dest="allowed_confidentiality",
+    )
+    evidence_claims.add_argument(
+        "--wording-strength",
+        default="exact",
+        choices=("generalized", "exact", "strong"),
+    )
+    evidence_claims.add_argument("--limit", type=int, default=100)
+    evidence_claims.add_argument("--offset", type=int, default=0)
+    evidence_claim_show = evidence_sub.add_parser("claim-show")
+    evidence_claim_show.add_argument("claim_id")
+    evidence_claim_show.add_argument(
+        "--allow-confidentiality",
+        action="append",
+        default=None,
+        dest="allowed_confidentiality",
+    )
+    evidence_claim_show.add_argument(
+        "--wording-strength",
+        default="exact",
+        choices=("generalized", "exact", "strong"),
+    )
 
     companies = sub.add_parser("companies")
     company_sub = companies.add_subparsers(dest="action", required=True)
@@ -117,6 +178,74 @@ def parser() -> argparse.ArgumentParser:
     company_import.add_argument("--market", choices=("technology", "trading"), required=True)
     company_show = company_sub.add_parser("plan-show")
     company_show.add_argument("proposal_id")
+    company_plan_list = company_sub.add_parser("plan-list")
+    company_plan_list.add_argument(
+        "--state", choices=("pending", "approved", "rejected")
+    )
+    company_plan_list.add_argument("--market", choices=("technology", "trading"))
+    company_approve = company_sub.add_parser("plan-approve")
+    company_approve.add_argument("proposal_id")
+    company_approve.add_argument("--actor", default="user")
+    company_approve.add_argument("--reason")
+    company_list = company_sub.add_parser("list")
+    company_list.add_argument("--market", choices=("technology", "trading"))
+    company_list.add_argument("--include-inactive", action="store_true")
+    company_detail = company_sub.add_parser("show")
+    company_detail.add_argument("company_id")
+    company_source_propose = company_sub.add_parser("source-propose")
+    company_source_propose.add_argument("--company", required=True)
+    company_source_propose.add_argument("--career-url", required=True)
+    company_source_propose.add_argument("--evidence-url", required=True)
+    company_source_propose.add_argument("--detection-note", required=True)
+    company_source_propose.add_argument(
+        "--adapter",
+        choices=("ashby", "greenhouse", "lever", "smartrecruiters", "custom", "unsupported"),
+    )
+    company_source_propose.add_argument("--source-key")
+    company_source_propose.add_argument("--tier", choices=("A", "B", "C"))
+    company_source_show = company_sub.add_parser("source-proposal-show")
+    company_source_show.add_argument("proposal_id")
+    company_source_approve = company_sub.add_parser("source-approve")
+    company_source_approve.add_argument("proposal_id")
+    company_source_approve.add_argument("--actor", default="user")
+    company_source_approve.add_argument("--reason")
+    company_source_health = company_sub.add_parser("source-health-check")
+    company_source_health.add_argument("source_id")
+    company_source_enable_propose = company_sub.add_parser("source-enable-propose")
+    company_source_enable_propose.add_argument("source_id")
+    company_source_enable_show = company_sub.add_parser("source-enable-proposal-show")
+    company_source_enable_show.add_argument("proposal_id")
+    company_source_enable_approve = company_sub.add_parser("source-enable-approve")
+    company_source_enable_approve.add_argument("proposal_id")
+    company_source_enable_approve.add_argument("--actor", default="user")
+    company_source_enable_approve.add_argument("--reason")
+    company_source_poll = company_sub.add_parser("source-poll")
+    company_source_poll.add_argument("source_id")
+    company_source_detect = company_sub.add_parser("source-detect")
+    company_source_detect.add_argument("source_id")
+
+    jobs = sub.add_parser("jobs")
+    jobs_sub = jobs.add_subparsers(dest="action", required=True)
+    jobs_list = jobs_sub.add_parser("list")
+    jobs_list.add_argument("--source-id")
+    jobs_list.add_argument(
+        "--classification",
+        action="append",
+        choices=sorted(FRESHNESS_CLASSIFICATIONS),
+        dest="classifications",
+    )
+    jobs_list.add_argument("--classified-since")
+    jobs_list.add_argument("--include-closed", action="store_true")
+    jobs_list.add_argument("--limit", type=int, default=100)
+    jobs_list.add_argument("--offset", type=int, default=0)
+    jobs_show = jobs_sub.add_parser("show")
+    jobs_show.add_argument("job_id")
+
+    daily = sub.add_parser("daily")
+    daily_sub = daily.add_subparsers(dest="action", required=True)
+    daily_report = daily_sub.add_parser("report")
+    daily_report.add_argument("--since", required=True)
+    daily_report.add_argument("--before")
     return root
 
 
@@ -322,6 +451,39 @@ def dispatch(args: argparse.Namespace) -> Envelope:
                         "Use approved project components and metrics when tailoring applications",
                     ),
                 )
+            if args.action in {"claims", "claim-show"}:
+                context = EligibilityContext(
+                    allowed_confidentiality=tuple(
+                        args.allowed_confidentiality or ("public", "private")
+                    ),
+                    requested_wording_strength=args.wording_strength,
+                )
+                if args.action == "claim-show":
+                    return Envelope(
+                        "evidence.claim-show",
+                        {"claim": get_claim(connection, args.claim_id, context=context)},
+                    )
+                items = list_claims(
+                    connection,
+                    query=args.query,
+                    project=args.project,
+                    skill=args.skill,
+                    tag=args.tag,
+                    claim_types=args.claim_types,
+                    verification_states=args.verification,
+                    confidentiality=args.confidentiality,
+                    eligible_only=args.eligible_only,
+                    context=context,
+                    limit=args.limit,
+                    offset=args.offset,
+                )
+                return Envelope(
+                    "evidence.claims",
+                    {"items": items, "count": len(items), "offset": args.offset},
+                    next_actions=(
+                        "Use eligible claim IDs as the candidate pool for a resume evidence plan",
+                    ),
+                )
         finally:
             connection.close()
 
@@ -355,6 +517,189 @@ def dispatch(args: argparse.Namespace) -> Envelope:
                 return Envelope(
                     "companies.plan-show",
                     {"proposal": get_company_plan_proposal(connection, args.proposal_id)},
+                )
+            if args.action == "plan-list":
+                items = list_company_plan_proposals(
+                    connection, state=args.state, market=args.market
+                )
+                return Envelope(
+                    "companies.plan-list", {"items": items, "count": len(items)}
+                )
+            if args.action == "plan-approve":
+                result = approve_company_plan_proposal(
+                    connection,
+                    args.proposal_id,
+                    actor=args.actor,
+                    reason=args.reason,
+                )
+                return Envelope(
+                    "companies.plan-approve",
+                    {"proposal": result},
+                    next_actions=(
+                        "Register and confirm each company's official career source",
+                    ),
+                )
+            if args.action == "list":
+                items = list_target_companies(
+                    connection,
+                    market=args.market,
+                    active_only=not args.include_inactive,
+                )
+                return Envelope(
+                    "companies.list", {"items": items, "count": len(items)}
+                )
+            if args.action == "show":
+                return Envelope(
+                    "companies.show",
+                    {"company": get_target_company(connection, args.company_id)},
+                )
+            if args.action == "source-propose":
+                result = create_company_source_proposal(
+                    connection,
+                    company_ref=args.company,
+                    career_url=args.career_url,
+                    evidence_url=args.evidence_url,
+                    detection_note=args.detection_note,
+                    adapter_type=args.adapter,
+                    source_key=args.source_key,
+                    priority_tier=args.tier,
+                )
+                return Envelope(
+                    "companies.source-propose",
+                    {"proposal": result},
+                    next_actions=(
+                        "Review the official-domain evidence and detected ATS details",
+                        "Approve registration; polling remains disabled until health checks exist",
+                    ),
+                )
+            if args.action == "source-proposal-show":
+                return Envelope(
+                    "companies.source-proposal-show",
+                    {
+                        "proposal": get_company_source_proposal(
+                            connection, args.proposal_id
+                        )
+                    },
+                )
+            if args.action == "source-approve":
+                result = approve_company_source_proposal(
+                    connection,
+                    args.proposal_id,
+                    actor=args.actor,
+                    reason=args.reason,
+                )
+                return Envelope(
+                    "companies.source-approve",
+                    {"proposal": result},
+                    next_actions=(
+                        "Run a bounded adapter health check before enabling polling",
+                    ),
+                )
+            if args.action == "source-health-check":
+                result = check_company_source_health(connection, args.source_id)
+                return Envelope(
+                    "companies.source-health-check",
+                    {"health_check": result},
+                    warnings=(
+                        "Health checks never enable polling automatically",
+                    ),
+                    next_actions=(
+                        "Review health evidence before proposing source enablement",
+                    ),
+                )
+            if args.action == "source-enable-propose":
+                result = create_company_source_enablement_proposal(
+                    connection, args.source_id
+                )
+                return Envelope(
+                    "companies.source-enable-propose",
+                    {"proposal": result},
+                    next_actions=(
+                        "Review the source, adapter, and latest health evidence",
+                        "Approve only when recurring monitoring is intended",
+                    ),
+                )
+            if args.action == "source-enable-proposal-show":
+                return Envelope(
+                    "companies.source-enable-proposal-show",
+                    {
+                        "proposal": get_company_source_enablement_proposal(
+                            connection, args.proposal_id
+                        )
+                    },
+                )
+            if args.action == "source-enable-approve":
+                result = approve_company_source_enablement_proposal(
+                    connection,
+                    args.proposal_id,
+                    actor=args.actor,
+                    reason=args.reason,
+                )
+                return Envelope(
+                    "companies.source-enable-approve",
+                    {"proposal": result},
+                    next_actions=(
+                        "Run the first baseline poll; do not classify baseline roles as new",
+                    ),
+                )
+            if args.action == "source-poll":
+                result = poll_company_source(connection, args.source_id)
+                return Envelope(
+                    "companies.source-poll",
+                    {"source_run": result},
+                    warnings=(
+                        "First successful polls are baseline only and never count as new jobs",
+                    ),
+                )
+            if args.action == "source-detect":
+                result = detect_linked_ats_sources(connection, args.source_id)
+                return Envelope(
+                    "companies.source-detect",
+                    {"detection": result},
+                    next_actions=(
+                        "Create a source-registration proposal for a verified candidate",
+                    ),
+                )
+        finally:
+            connection.close()
+
+    if args.group == "jobs":
+        connection = connect(paths, config)
+        try:
+            apply_migrations(connection, paths.workspace)
+            if args.action == "list":
+                items = list_monitored_jobs(
+                    connection,
+                    source_id=args.source_id,
+                    classifications=tuple(args.classifications or ()),
+                    classified_since=args.classified_since,
+                    open_only=not args.include_closed,
+                    limit=args.limit,
+                    offset=args.offset,
+                )
+                return Envelope("jobs.list", {"items": items, "count": len(items)})
+            if args.action == "show":
+                return Envelope(
+                    "jobs.show", {"result": get_monitored_job(connection, args.job_id)}
+                )
+        finally:
+            connection.close()
+
+    if args.group == "daily":
+        connection = connect(paths, config)
+        try:
+            apply_migrations(connection, paths.workspace)
+            if args.action == "report":
+                report = build_daily_report(
+                    connection, since=args.since, before=args.before
+                )
+                return Envelope(
+                    "daily.report",
+                    {"report": report},
+                    warnings=tuple(report["warnings"]),
+                    next_actions=(
+                        "Review source coverage before interpreting an empty report",
+                    ),
                 )
         finally:
             connection.close()
